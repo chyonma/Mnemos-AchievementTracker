@@ -3,7 +3,7 @@
 > Defines what Mnemos does at a feature level for v1, and what's planned beyond it.
 > Derived from PROJECT_BIBLE.md — every feature here maps to a goal defined there.
 
-**Status:** v1 draft
+**Status:** v1 — Finalized
 
 ---
 
@@ -52,6 +52,9 @@ Achievements are sourced through an interchangeable provider interface. Steam is
 ### 3.3 Graceful Handling of No Provider
 Games with no available achievement provider are not marked "unsupported" — they simply show no achievement data, while playtime, sessions, and history remain fully functional.
 
+### 3.4 Achievement Unlock Notifications
+When Mnemos detects a newly unlocked achievement (via the Steam provider, polled during an active session), it surfaces a desktop notification to the player. This applies only to games with an active achievement provider; games without one have no notifications to surface, consistent with 3.3.
+
 ---
 
 ## 4. Library & History View
@@ -93,4 +96,4 @@ Player data is stored in a format that can reasonably be backed up or migrated b
 
 ## Roadmap Pointer
 
-Features planned beyond v1 (Linux support, Merge/Link Installations, plugin system, Mnemos-native achievement engine, additional official providers) are tracked in `ROADMAP.md`, not here — this document reflects committed v1 scope only.s
+Features planned beyond v1 (Linux support, Merge/Link Installations, plugin system, Mnemos-native achievement engine, additional official providers) are tracked in `ROADMAP.md`, not here — this document reflects committed v1 scope only.
