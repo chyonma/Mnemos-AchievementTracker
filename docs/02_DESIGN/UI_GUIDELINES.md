@@ -87,4 +87,4 @@ These translate PROJECT_BIBLE.md's Guiding Principles into UI-specific terms:
 
 ## 9. Overall Experience Standard
 
-Taken together, these guidelines exist to make Mnemos feel like **trustworthy infrastructure, not another app competing for attention** — consistent, calm, legible, and consistent with its identity as a permanent record rather than a live, engagement-driven product. Any UI decision that trades this for visual novelty should be questioned, the same way FEATURES.md questions scope creep against PROJECT_BIBLE.md.
+Taken together, these guidelines exist to make Mnemos feel like **trustworthy infrastructure, not another app competing for attention** — consistent, calm, legible, and consistent with its identity as a permanent record rather than a live, engagement-driven product. Any UI decision that trades this for visual novelty should be questioned, the same way FEATURES.md questions scope creep against PROJECT_BIBLE.md 
