@@ -41,3 +41,21 @@ pub struct Session{
     pub duration_seconds: Option<u64>,
     pub manually_edited: bool,
 }
+impl Session{
+    pub fn new (installation_id: String, started_at: String) -> Self{
+        Self{
+            id: uuid::Uuid::new_v4().to_string(),
+            installation_id,
+            started_at,
+            ended_at: None,
+            duration_seconds: None,
+            manually_edited: false,
+
+        }
+    }
+    pub fn end(&mut self, ended_at: String, duration_seconds: u64){
+        self.ended_at = Some(ended_at);
+        self.duration_seconds = Some(duration_seconds);
+    }
+
+}
