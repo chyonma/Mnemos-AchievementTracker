@@ -5,5 +5,9 @@ pub async fn connect(database_url: &str) -> Result<SqlitePool, sqlx::Error> {
         .connect(database_url)
         .await?;
 
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await?;
+
     Ok(pool)
 }
