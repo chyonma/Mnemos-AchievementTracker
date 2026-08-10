@@ -20,8 +20,10 @@ pub async fm insert_installation(
     let now = Utc::now().to_rfc3339();
 
     sqlx:: query(
-        "INSERT INFO INSTALLATION
-        "
+        "INSERT INTO installations 
+         (id, executable_path, executable_name, install_directory, display_name, known_launcher, steam_app_id, manually_linked, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\\
+         "
     )
 
     .bind(&installation.id)
