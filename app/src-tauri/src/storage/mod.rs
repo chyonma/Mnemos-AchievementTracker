@@ -1,4 +1,5 @@
 use crate::core::Installation;
+use crate::core::Session;
 use chrono::Utc;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
@@ -76,6 +77,60 @@ impl From<InstallationRow> for Installation {
             known_launcher: row.known_launcher,
             steam_app_id: row.steam_app_id,
             manually_linked: row.manually_linked,
+        }
+    }
+}
+pub async fn insert_session(pool: &SqlitePool, session: &Session) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO sessions
+        (id, installation_id, started_at, ended_at, duration_seconds, manually_edited)
+        VALUES (?, ?, ?, ?, ?, ?)"
+    )
+    .bind(&session.id)
+    .bind(&session.installation_id)
+    .bind(&session.started_at)
+    .bind(&session.ended_at)
+    .bind(session.duration_seconds.map(|d| d as i64))
+    .bind(session.manually_edited)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn get_sessions_for_installation(
+    pool: &SqlitePool,
+    installation_id: &str,
+) -> Result<Vec<Session>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, SessionRow>(
+        "SELECT * FROM sessions WHERE installation_id = ?"
+    )
+    .bind(installation_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|r| r.into()).collect())
+}
+
+#[derive(sqlx::FromRow)]
+struct SessionRow {
+    id: String,
+    installation_id: String,
+    started_at: String,
+    ended_at: Option<String>,
+    duration_seconds: Option<i64>,
+    manually_edited: bool,
+}
+
+impl From<SessionRow> for Session {
+    fn from(row: SessionRow) -> Self {
+        Session {
+            id: row.id,
+            installation_id: row.installation_id,
+            started_at: row.started_at,
+            ended_at: row.ended_at,
+            duration_seconds: row.duration_seconds.map(|d| d as u64),
+            manually_edited: row.manually_edited,
         }
     }
 }
