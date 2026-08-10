@@ -1,6 +1,6 @@
-use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
+use crate::core::Installation;
 use chrono::Utc;
-use sqlx::sqlite::{SqlitePool. SqlitePoolOptions};
+use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
 pub async fn connect(database_url: &str) -> Result<SqlitePool, sqlx::Error> {
     let pool = SqlitePoolOptions::new()
@@ -13,7 +13,7 @@ pub async fn connect(database_url: &str) -> Result<SqlitePool, sqlx::Error> {
 
     Ok(pool)
 }
-pub async fm insert_installation(
+pub async fn insert_installation(
     pool: &SqlitePool,
     installation: &Installation,
 ) -> Result<(), sqlx::Error> {
@@ -22,7 +22,7 @@ pub async fm insert_installation(
     sqlx:: query(
         "INSERT INTO installations 
          (id, executable_path, executable_name, install_directory, display_name, known_launcher, steam_app_id, manually_linked, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\\
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          "
     )
 
@@ -32,8 +32,8 @@ pub async fm insert_installation(
     .bind(&installation.install_directory)
     .bind(&installation.display_name)
     .bind(&installation.known_launcher)
-    .bind(&installation.steam_api_id)
-    .bind(&installation.manually_linked)
+    .bind(&installation.steam_app_id)
+    .bind(installation.manually_linked)
     .bind(&now)
     .bind(&now)
     .execute(pool)
@@ -41,14 +41,14 @@ pub async fm insert_installation(
     Ok(())
 }
 
-pub async fn get_all_installation(
+pub async fn get_all_installations(
     pool: &SqlitePool,
-) -> Result<Vec<Installation>.sqlx::Error>{
-    let rows = sqlx::query_as ::<_, InstallationRow>("SELECT * FROM installations")
+) -> Result<Vec<Installation>,sqlx::Error>{
+    let rows = sqlx::query_as::<_, InstallationRow>("SELECT * FROM installations")
         .fetch_all(pool)
          .await?;
 
-    Ok(rows.into_iter().map(|r|.r.into()).collect())
+    Ok(rows.into_iter().map(|r| r.into()).collect())
 
 
 }
