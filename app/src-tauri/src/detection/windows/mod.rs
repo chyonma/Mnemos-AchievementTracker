@@ -8,7 +8,7 @@ impl GameDetector for WindowsGameDetector {
         sys.refresh_all();
 
         sys.processes().values().filter_map(|process| {
-            process.exe().map(|path.display().to_string())
+            process.exe().map(|path| path.display().to_string())
         }).collect()
     }
 }
