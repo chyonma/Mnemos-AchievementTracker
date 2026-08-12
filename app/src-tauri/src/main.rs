@@ -1,6 +1,7 @@
 mod core;
 mod storage;
 mod bridge;
+mod detection;
 
 use sqlx::SqlitePool;
 
