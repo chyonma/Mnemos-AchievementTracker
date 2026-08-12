@@ -15,7 +15,6 @@ async fn main() {
         .await
         .expect("failed to connect to database");
 
-    // TEMPORARY: prove matching works against a real running process
     let brave_installation = core::Installation::new(
         "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe".to_string(),
         "brave.exe".to_string(),
