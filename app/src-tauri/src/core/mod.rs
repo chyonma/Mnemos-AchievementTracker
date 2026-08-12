@@ -59,3 +59,13 @@ impl Session{
     }
 
 }
+pub fn match_running_installations(
+    running_paths: &[String],
+    installations: &[Installation],
+) -> Vec<Installation> {
+    installations
+        .iter()
+        .filter(|installation| running_paths.contains(&installation.executable_path))
+        .cloned()
+        .collect()
+}
