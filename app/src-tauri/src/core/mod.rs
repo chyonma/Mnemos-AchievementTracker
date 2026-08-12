@@ -1,4 +1,4 @@
-#[derive (Debug, Clone)]
+#[derive (Debug, Clone, serde::Serialize)]
 pub struct Installation{
     pub id: String,
     pub executable_path: String,
@@ -32,7 +32,7 @@ impl Installation{
 
 }
 
-#[derive (Debug, Clone)]
+#[derive (Debug, Clone, serde::Serialize)]
 pub struct Session{
     pub id: String,
     pub installation_id: String,
