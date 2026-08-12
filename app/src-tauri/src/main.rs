@@ -15,8 +15,19 @@ async fn main() {
         .await
         .expect("failed to connect to database");
 
+    // TEMPORARY: prove matching works against a real running process
+    let brave_installation = core::Installation::new(
+        "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe".to_string(),
+        "brave.exe".to_string(),
+        "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application".to_string(),
+        "Brave Browser (test)".to_string(),
+    );
+    storage::insert_installation(&pool, &brave_installation)
+        .await
+        .expect("failed to insert test installation");
+
     use detection::GameDetector;
-    let detector = detection::windows::WindowsGameDetector;
+    let detector = detection::windows::WindowsDetector;
     let running = detector.get_running_processes();
 
     let known_installations = storage::get_all_installations(&pool)
@@ -24,12 +35,6 @@ async fn main() {
         .expect("failed to fetch installations");
 
     let matched = core::match_running_installations(&running, &known_installations);
-
-    println!("Known installations: {}", known_installations.len());
-    println!("Currently running (matched): {}", matched.len());
-    for installation in &matched {
-        println!("{}", installation.display_name);
-    }
 
     tauri::Builder::default()
         .manage(AppState { db: pool })
