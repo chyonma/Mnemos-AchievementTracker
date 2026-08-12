@@ -26,7 +26,7 @@ async fn main() {
         .expect("failed to insert test installation");
 
     use detection::GameDetector;
-    let detector = detection::windows::WindowsDetector;
+    let detector = detection::windows::WindowsGameDetector;
     let running = detector.get_running_processes();
 
     let known_installations = storage::get_all_installations(&pool)
