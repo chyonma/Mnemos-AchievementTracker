@@ -1,5 +1,6 @@
 mod core;
 mod storage;
+mod bridge;
 
 use sqlx::SqlitePool;
 pub struct AppState {
