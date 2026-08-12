@@ -18,9 +18,17 @@ async fn main() {
     use detection::GameDetector;
     let detector = detection::windows::WindowsGameDetector;
     let running = detector.get_running_processes();
-    println!("Found {} running processes:", running.len());
-    for path in running.iter().take(10) {
-        println!("{}", path);
+
+    let known_installations = storage::get_all_installations(&pool)
+        .await
+        .expect("failed to fetch installations");
+
+    let matched = core::match_running_installations(&running, &known_installations);
+
+    println!("Known installations: {}", known_installations.len());
+    println!("Currently running (matched): {}", matched.len());
+    for installation in &matched {
+        println!("{}", installation.display_name);
     }
 
     tauri::Builder::default()
