@@ -153,3 +153,10 @@ pub async fn end_session(pool: &SqlitePool, session_id: &str, ended_at: &str, du
         .await?;
     Ok(())
 }
+#[derive(sqlx::FromRow)]
+struct ActiveSessionRow {
+    id: String,
+    installation_id: String,
+    started_at: String,
+    last_heartbeat: Option<String>,
+}
