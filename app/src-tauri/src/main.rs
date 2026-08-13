@@ -15,30 +15,6 @@ async fn main() {
         .await
         .expect("failed to connect to database");
 
-    use detection::GameDetector;
-    let detector = detection::windows::WindowsGameDetector;
-    let running = detector.get_running_processes();
-
-    let known_installations = storage::get_all_installations(&pool)
-        .await
-        .expect("failed to fetch installations");
-
-    let matched = core::match_running_installations(&running, &known_installations);
-
-    let now = chrono::Utc::now().to_rfc3339();
-    let new_sessions = core::start_sessions_for(&matched, now);
-
-    for session in &new_sessions {
-        storage::insert_session(&pool, session)
-            .await
-            .expect("failed to insert session");
-    }
-
-    println!("Created and saved {} session(s)", new_sessions.len());
-    for session in &new_sessions {
-        println!("Session {} for installation {} started at {}", session.id, session.installation_id, session.started_at);
-    }
-
 
     tauri::Builder::default()
         .manage(AppState { db: pool })

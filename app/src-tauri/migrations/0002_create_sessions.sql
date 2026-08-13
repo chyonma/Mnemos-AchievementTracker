@@ -1,5 +1,5 @@
 CREATE TABLE sessions (
-    if TEXT PRIMARY KEY NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
     installation_id TEXT NOT NULL,
     started_at TEXT NOT NULL,
     ended_at TEXT,
