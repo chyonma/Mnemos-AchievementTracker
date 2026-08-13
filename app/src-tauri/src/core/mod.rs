@@ -69,3 +69,10 @@ pub fn match_running_installations(
         .cloned()
         .collect()
 }
+
+pub fn start_sessions_for(installations: &[Installation], started_at: String) -> Vec<Session> {
+    installations
+        .iter()
+        .map(|installation| Session::new(installation.id.clone(), started_at.clone()))
+        .collect()
+}
