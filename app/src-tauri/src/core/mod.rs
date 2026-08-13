@@ -40,6 +40,7 @@ pub struct Session{
     pub ended_at: Option<String>,
     pub duration_seconds: Option<u64>,
     pub manually_edited: bool,
+    pub last_heartbeat: Option<String>,
 }
 impl Session{
     pub fn new (installation_id: String, started_at: String) -> Self{
@@ -50,12 +51,17 @@ impl Session{
             ended_at: None,
             duration_seconds: None,
             manually_edited: false,
+            last_heartbeat: None,
 
         }
     }
     pub fn end(&mut self, ended_at: String, duration_seconds: u64){
         self.ended_at = Some(ended_at);
         self.duration_seconds = Some(duration_seconds);
+    }
+
+    pub fn last_heartbeat(&mut self, at: String){
+        self.last_heartbeat = Some(at);
     }
 
 }
