@@ -160,3 +160,13 @@ struct ActiveSessionRow {
     started_at: String,
     last_heartbeat: Option<String>,
 }
+
+pub async fn get_orphaned_sessions(pool: &SqlitePool) -> Result<Vec<(String, String, String, Option<String>)>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, ActiveSessionRow>(
+        "SELECT id, installation_id, started_at, last_heartbeat FROM sessions WHERE ended_at IS NULL"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|r| (r.id, r.installation_id, r.started_at, r.last_heartbeat)).collect())
+}
