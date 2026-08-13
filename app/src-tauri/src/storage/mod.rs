@@ -92,6 +92,7 @@ pub async fn insert_session(pool: &SqlitePool, session: &Session) -> Result<(), 
     .bind(&session.ended_at)
     .bind(session.duration_seconds.map(|d| d as i64))
     .bind(session.manually_edited)
+    .bind(&session.last_heartbeat)
     .execute(pool)
     .await?;
 
