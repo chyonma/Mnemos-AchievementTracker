@@ -121,6 +121,7 @@ struct SessionRow {
     ended_at: Option<String>,
     duration_seconds: Option<i64>,
     manually_edited: bool,
+    last_heartbeat: Option<String>,
 }
 
 impl From<SessionRow> for Session {
@@ -132,6 +133,7 @@ impl From<SessionRow> for Session {
             ended_at: row.ended_at,
             duration_seconds: row.duration_seconds.map(|d| d as u64),
             manually_edited: row.manually_edited,
+            last_heartbeat: row.last_heartbeat,
         }
     }
 }
