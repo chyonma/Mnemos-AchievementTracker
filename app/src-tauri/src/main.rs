@@ -14,6 +14,20 @@ async fn main() {
     let pool = storage::connect("sqlite://mnemos.db?mode=rwc")
         .await
         .expect("failed to connect to database");
+        let orphaned = storage::get_orphaned_sessions(&pool)
+            .await
+            .expect("failed to fetch orphaned sessions");
+
+        for (session_id, _installation_id, started_at, last_heartbeat) in &orphaned {
+            let (ended_at, duration) = core::recover_orphaned_session(started_at, last_heartbeat);
+            storage::end_session(&pool, session_id, &ended_at, duration)
+                .await
+                .expect("failed to close orphaned session");
+        }
+
+        if !orphaned.is_empty() {
+            println!("Recovered {} orphaned session(s) from a previous run", orphaned.len());
+        }
 
 
     tauri::Builder::default()
