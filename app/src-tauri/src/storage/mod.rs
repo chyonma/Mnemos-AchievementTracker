@@ -143,3 +143,13 @@ pub async fn update_heartbeat(pool: &SqlitePool, session_id: &str, at: &str) -> 
         .await?;
     Ok(())
 }
+
+pub async fn end_session(pool: &SqlitePool, session_id: &str, ended_at: &str, duration_seconds: i64) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE sessions SET ended_at = ?, duration_seconds = ? WHERE id = ?")
+        .bind(ended_at)
+        .bind(duration_seconds)
+        .bind(session_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
