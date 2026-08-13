@@ -4,6 +4,10 @@ mod bridge;
 mod detection;
 
 use sqlx::SqlitePool;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use std::time::Duration;
 
 pub struct AppState {
     pub db: SqlitePool,
@@ -28,6 +32,7 @@ async fn main() {
         if !orphaned.is_empty() {
             println!("Recovered {} orphaned session(s) from a previous run", orphaned.len());
         }
+
 
 
     tauri::Builder::default()
