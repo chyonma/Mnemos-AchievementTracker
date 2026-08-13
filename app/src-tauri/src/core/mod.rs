@@ -82,3 +82,17 @@ pub fn start_sessions_for(installations: &[Installation], started_at: String) ->
         .map(|installation| Session::new(installation.id.clone(), started_at.clone()))
         .collect()
 }
+
+pub fn recover_orphaned_session(started_at: &str, last_heartbeat: &Option<String>) -> (String, i64) {
+    let ended_at = last_heartbeat.clone().unwrap_or_else(|| started_at.to_string());
+
+    let start = chrono::DateTime::parse_from_rfc3339(started_at)
+        .expect("invalid started_at timestamp");
+    let end = chrono::DateTime::parse_from_rfc3339(&ended_at)
+        .expect("invalid ended_at timestamp");
+
+    let duration = (end - start).num_seconds().max(0);
+
+    (ended_at, duration)
+
+}
