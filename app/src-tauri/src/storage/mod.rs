@@ -135,3 +135,11 @@ impl From<SessionRow> for Session {
         }
     }
 }
+pub async fn update_heartbeat(pool: &SqlitePool, session_id: &str, at: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE sessions SET last_heartbeat = ? WHERE id = ?")
+        .bind(at)
+        .bind(session_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
