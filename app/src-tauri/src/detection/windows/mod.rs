@@ -74,7 +74,6 @@ fn find_main_executable(game_dir: &Path) -> Option<Installation> {
         game_dir.to_str()?.to_string(),
         display_name,
     );
-    installation.known_launcher = Some("steam".to_string());
 
     Some(installation)
 }
