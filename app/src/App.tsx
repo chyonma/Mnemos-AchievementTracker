@@ -20,11 +20,20 @@ function App() {
       .then((result) => setInstallations(result))
       .catch((err) => console.error("Failed to fetch installations:", err));
   }, []);
-
+  const handleScan = () => {
+    invoke<number>("scan_library")
+      .then((count) => {
+        console.log(`Discovered ${count} new game(s)`);
+        return invoke<Installation[]>("get_installations"); // refresh the list after scanning
+      })
+      .then((result) => setInstallations(result))
+      .catch((err) => console.error("Scan failed:", err));
+  };
   return (
     <div>
       <h1>Mnemos</h1>
       <h2>Installations</h2>
+      <button onClick={handleScan}>Scan Library</button>
       <ul>
         {installations.map((inst) => (
           <li key={inst.id}>{inst.display_name} — {inst.executable_path}</li>
