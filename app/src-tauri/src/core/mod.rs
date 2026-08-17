@@ -76,6 +76,14 @@ pub fn match_running_installations(
         .collect()
 }
 
+pub fn filter_new_installations(discovered: &[Installation], known: &[Installation]) -> Vec<Installation> {
+    discovered
+        .iter()
+        .filter(|d| !known.iter().any(|k| k.executable_path == d.executable_path))
+        .cloned()
+        .collect()
+}
+
 pub fn start_sessions_for(installations: &[Installation], started_at: String) -> Vec<Session> {
     installations
         .iter()
