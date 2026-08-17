@@ -68,7 +68,7 @@ fn find_main_executable(game_dir: &Path) -> Option<Installation> {
     let display_name = game_dir.file_name()?.to_str()?.to_string();
     let executable_name = exe_path.file_name()?.to_str()?.to_string();
 
-    let mut installation = Installation::new(
+    let  installation = Installation::new(
         exe_path.to_str()?.to_string(),
         executable_name,
         game_dir.to_str()?.to_string(),

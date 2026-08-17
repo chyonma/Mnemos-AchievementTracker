@@ -85,8 +85,14 @@ pub struct DiscoveryReconciliation {
 pub fn reconcile_discovered_installations(discovered: &[Installation], known: &[Installation]) -> DiscoveryReconciliation {
     let mut new = Vec::new();
     let mut updated = Vec::new();
+    let mut seen_paths: Vec<&str> = Vec::new(); 
 
     for d in discovered {
+        if seen_paths.contains(&d.executable_path.as_str()) {
+            continue; 
+        }
+        seen_paths.push(&d.executable_path);
+
         match known.iter().find(|k| k.executable_path == d.executable_path) {
             None => new.push(d.clone()),
             Some(existing) => {
