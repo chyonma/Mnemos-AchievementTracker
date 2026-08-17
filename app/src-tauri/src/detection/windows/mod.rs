@@ -3,6 +3,7 @@ use sysinfo::System;
 use std::fs;
 use std::path::Path;
 use crate::core::Installation;
+
 pub struct WindowsGameDetector;
 
 impl GameDetector for WindowsGameDetector {
@@ -16,36 +17,30 @@ impl GameDetector for WindowsGameDetector {
         }).collect()
     }
 
-        fn discover_installations(&self) -> Vec<Installation> {
-            let steam_paths = [
-                r"C:\Program Files (x86)\Steam\steamapps\common",
-                r"C:\Program Files\Steam\steamapps\common",
-            ];
-        
-    
-            let mut discovered = Vec::new();
-    
-            for steam_path in steam_paths {
-                let path = Path::new(steam_path);
-                if !path.exists() {
+    fn discover_installations(&self, roots: &[(String, Option<String>)]) -> Vec<Installation> {
+        let mut discovered = Vec::new();
+
+        for (root, launcher_hint) in roots {
+            let path = Path::new(root);
+            if !path.exists() {
+                continue;
+            }
+
+            let Ok(entries) = fs::read_dir(path) else { continue };
+
+            for entry in entries.flatten() {
+                let game_dir = entry.path();
+                if !game_dir.is_dir() {
                     continue;
                 }
-    
-                let Ok(entries) = fs::read_dir(path) else { continue };
-    
-                for entry in entries.flatten() {
-                    let game_dir = entry.path();
-                    if !game_dir.is_dir() {
-                        continue;
-                    }
-    
-                    if let Some(installation) = find_main_executable(&game_dir) {
-                        discovered.push(installation);
-                    }
+
+                if let Some(mut installation) = find_main_executable(&game_dir) {
+                    installation.known_launcher = launcher_hint.clone();
+                    discovered.push(installation);
                 }
             }
-    
-            
+        }
+
         discovered
     }
 }
