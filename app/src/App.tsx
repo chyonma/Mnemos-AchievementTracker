@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core"; 
+import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 
 type Installation = {
   id: string;
@@ -13,46 +14,55 @@ type Installation = {
 };
 
 function App() {
-  const [installations, setInstallations] = useState<Installation[]>([]); 
+  const [installations, setInstallations] = useState<Installation[]>([]);
 
   useEffect(() => {
     invoke<Installation[]>("get_installations")
       .then((result) => setInstallations(result))
       .catch((err) => console.error("Failed to fetch installations:", err));
   }, []);
+
   const handleScan = () => {
     invoke<number>("scan_library")
       .then((count) => {
         console.log(`Discovered ${count} new game(s)`);
-        return invoke<Installation[]>("get_installations"); // refresh the list after scanning
+        return invoke<Installation[]>("get_installations");
       })
       .then((result) => setInstallations(result))
       .catch((err) => console.error("Scan failed:", err));
   };
-  const [folderPath, setFolderPath] = useState("");
 
-  const handleAddFolder = () => {
-    invoke("add_watched_folder", { path: folderPath })
-    .then(() => setFolderPath(""))
-    .catch((err) => console.error("Failed to add folder:", err));
+  const handleAddFolder = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: "Select a game folder",
+      });
+
+      if (typeof selected === "string") {
+        await invoke("add_watched_folder", { path: selected });
+        console.log("Folder added:", selected);
+        handleScan();
+      }
+    } catch (err) {
+      console.error("Failed to add folder:", err);
+    }
   };
+
   return (
     <div>
       <h1>Mnemos</h1>
       <h2>Installations</h2>
 
       <button onClick={handleScan}>Scan Library</button>
-      <input
-        value={folderPath}
-        onChange={(e) => setFolderPath(e.target.value)}
-        placeholder="D:\\Games"
-      />
-
       <button onClick={handleAddFolder}>Add Watched Folder</button>
-      
+
       <ul>
         {installations.map((inst) => (
-          <li key={inst.id}>{inst.display_name} — {inst.executable_path}</li>
+          <li key={inst.id}>
+            {inst.display_name} — {inst.executable_path}
+          </li>
         ))}
       </ul>
     </div>

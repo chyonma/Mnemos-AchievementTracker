@@ -78,6 +78,7 @@ async fn main() {
 });
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState { db: pool })
         .invoke_handler(tauri::generate_handler![
             bridge::get_installations,
@@ -85,7 +86,7 @@ async fn main() {
             bridge::add_watched_folder,
             bridge::get_watched_folders
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    .run(tauri::generate_context!())
+    .expect("error while running tauri application");
         
 }
