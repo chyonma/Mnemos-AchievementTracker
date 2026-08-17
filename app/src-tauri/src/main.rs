@@ -79,7 +79,7 @@ async fn main() {
 
     tauri::Builder::default()
         .manage(AppState { db: pool })
-        .invoke_handler(tauri::generate_handler![bridge::get_installations])
+        .invoke_handler(tauri::generate_handler![bridge::get_installations, bridge::scan_library])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
