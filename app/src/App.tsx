@@ -29,11 +29,27 @@ function App() {
       .then((result) => setInstallations(result))
       .catch((err) => console.error("Scan failed:", err));
   };
+  const [folderPath, setFolderPath] = useState("");
+
+  const handleAddFolder = () => {
+    invoke("add_watched_folder", { path: folderPath })
+    .then(() => setFolderPath(""))
+    .catch((err) => console.error("Failed to add folder:", err));
+  };
   return (
     <div>
       <h1>Mnemos</h1>
       <h2>Installations</h2>
+
       <button onClick={handleScan}>Scan Library</button>
+      <input
+        value={folderPath}
+        onChange={(e) => setFolderPath(e.target.value)}
+        placeholder="D:\\Games"
+      />
+
+      <button onClick={handleAddFolder}>Add Watched Folder</button>
+      
       <ul>
         {installations.map((inst) => (
           <li key={inst.id}>{inst.display_name} — {inst.executable_path}</li>
