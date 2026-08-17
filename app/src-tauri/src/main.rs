@@ -82,4 +82,5 @@ async fn main() {
         .invoke_handler(tauri::generate_handler![bridge::get_installations, bridge::scan_library])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+        .invoke_handler(tauri::generate_handler![bridge::get_installations, bridge::scan_library, bridge::add_watched_folder, bridge::get_watched_folders])
 }
