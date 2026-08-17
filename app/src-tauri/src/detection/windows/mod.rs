@@ -1,5 +1,7 @@
 use crate::detection::GameDetector;
 use sysinfo::System;
+use std::fs;
+use std::Path;
 pub struct WindowsGameDetector;
 
 impl GameDetector for WindowsGameDetector {
