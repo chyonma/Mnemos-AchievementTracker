@@ -76,12 +76,30 @@ pub fn match_running_installations(
         .collect()
 }
 
-pub fn filter_new_installations(discovered: &[Installation], known: &[Installation]) -> Vec<Installation> {
-    discovered
-        .iter()
-        .filter(|d| !known.iter().any(|k| k.executable_path == d.executable_path))
-        .cloned()
-        .collect()
+pub struct DiscoveryReconciliation {
+    pub new: Vec<Installation>,
+    pub updated: Vec<Installation>,
+}
+
+
+pub fn reconcile_discovered_installations(discovered: &[Installation], known: &[Installation]) -> DiscoveryReconciliation {
+    let mut new = Vec::new();
+    let mut updated = Vec::new();
+
+    for d in discovered {
+        match known.iter().find(|k| k.executable_path == d.executable_path) {
+            None => new.push(d.clone()),
+            Some(existing) => {
+                if existing.known_launcher.is_none() && d.known_launcher.is_some() {
+                    let mut merged = existing.clone();
+                    merged.known_launcher = d.known_launcher.clone();
+                    updated.push(merged);
+                }
+            }
+        }
+    }
+
+    DiscoveryReconciliation { new, updated }
 }
 
 pub fn start_sessions_for(installations: &[Installation], started_at: String) -> Vec<Session> {
