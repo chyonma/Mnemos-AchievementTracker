@@ -14,19 +14,18 @@ pub async fn connect(database_url: &str) -> Result<SqlitePool, sqlx::Error> {
 
     Ok(pool)
 }
+
 pub async fn insert_installation(
     pool: &SqlitePool,
     installation: &Installation,
 ) -> Result<(), sqlx::Error> {
     let now = Utc::now().to_rfc3339();
 
-    sqlx:: query(
+    sqlx::query(
         "INSERT INTO installations 
-         (id, executable_path, executable_name, install_directory, display_name, known_launcher, steam_app_id, manually_linked, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-         "
+         (id, executable_path, executable_name, install_directory, display_name, known_launcher, steam_app_id, provider_game_record_id, manually_linked, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
-
     .bind(&installation.id)
     .bind(&installation.executable_path)
     .bind(&installation.executable_name)
@@ -34,6 +33,7 @@ pub async fn insert_installation(
     .bind(&installation.display_name)
     .bind(&installation.known_launcher)
     .bind(&installation.steam_app_id)
+    .bind(&installation.provider_game_record_id)  
     .bind(installation.manually_linked)
     .bind(&now)
     .bind(&now)
@@ -44,14 +44,12 @@ pub async fn insert_installation(
 
 pub async fn get_all_installations(
     pool: &SqlitePool,
-) -> Result<Vec<Installation>,sqlx::Error>{
+) -> Result<Vec<Installation>, sqlx::Error> {
     let rows = sqlx::query_as::<_, InstallationRow>("SELECT * FROM installations")
         .fetch_all(pool)
-         .await?;
+        .await?;
 
     Ok(rows.into_iter().map(|r| r.into()).collect())
-
-
 }
 
 #[derive(sqlx::FromRow)]
@@ -63,6 +61,8 @@ struct InstallationRow {
     display_name: String,
     known_launcher: Option<String>,
     steam_app_id: Option<String>,
+   
+    provider_game_record_id: Option<String>,
     manually_linked: bool,
 }
 
@@ -76,11 +76,15 @@ impl From<InstallationRow> for Installation {
             display_name: row.display_name,
             known_launcher: row.known_launcher,
             steam_app_id: row.steam_app_id,
+            
+            provider_game_record_id: row.provider_game_record_id,
             manually_linked: row.manually_linked,
         }
     }
 }
+
 pub async fn insert_session(pool: &SqlitePool, session: &Session) -> Result<(), sqlx::Error> {
+    
     sqlx::query(
         "INSERT INTO sessions
         (id, installation_id, started_at, ended_at, duration_seconds, manually_edited)
@@ -92,7 +96,6 @@ pub async fn insert_session(pool: &SqlitePool, session: &Session) -> Result<(), 
     .bind(&session.ended_at)
     .bind(session.duration_seconds.map(|d| d as i64))
     .bind(session.manually_edited)
-    .bind(&session.last_heartbeat)
     .execute(pool)
     .await?;
 
@@ -137,6 +140,7 @@ impl From<SessionRow> for Session {
         }
     }
 }
+
 pub async fn update_heartbeat(pool: &SqlitePool, session_id: &str, at: &str) -> Result<(), sqlx::Error> {
     sqlx::query("UPDATE sessions SET last_heartbeat = ? WHERE id = ?")
         .bind(at)
@@ -155,6 +159,7 @@ pub async fn end_session(pool: &SqlitePool, session_id: &str, ended_at: &str, du
         .await?;
     Ok(())
 }
+
 #[derive(sqlx::FromRow)]
 struct ActiveSessionRow {
     id: String,
@@ -192,11 +197,55 @@ pub async fn get_watched_folders(pool: &SqlitePool) -> Result<Vec<String>, sqlx:
     Ok(rows.into_iter().map(|(p,)| p).collect())
 }
 
-
 pub async fn update_installation_launcher(pool: &SqlitePool, installation_id: &str, known_launcher: &str) -> Result<(), sqlx::Error> {
     sqlx::query("UPDATE installations SET known_launcher = ?, updated_at = ? WHERE id = ?")
         .bind(known_launcher)
         .bind(chrono::Utc::now().to_rfc3339())
+        .bind(installation_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn get_or_create_provider_game_record(
+    pool: &SqlitePool,
+    provider: &str,
+    source_id: &str,
+    game_name: &str,
+) -> Result<String, sqlx::Error> {
+    let existing: Option<(String,)> = sqlx::query_as(
+        "SELECT id FROM provider_game_records WHERE provider = ? AND source_id = ?"
+    )
+    .bind(provider)
+    .bind(source_id)
+    .fetch_optional(pool)
+    .await?;
+
+    if let Some((id,)) = existing {
+        return Ok(id);
+    }
+
+    let game_id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    sqlx::query("INSERT INTO games (id, name, created_at) VALUES (?, ?, ?)")
+        .bind(&game_id).bind(game_name).bind(&now)
+        .execute(pool).await?;
+
+    let record_id = uuid::Uuid::new_v4().to_string();
+    sqlx::query("INSERT INTO provider_game_records (id, game_id, provider, source_id, created_at) VALUES (?, ?, ?, ?, ?)")
+        .bind(&record_id).bind(&game_id).bind(provider).bind(source_id).bind(&now)
+        .execute(pool).await?;
+
+    Ok(record_id)
+}
+
+pub async fn link_installation_to_provider_game(
+    pool: &SqlitePool,
+    installation_id: &str,
+    provider_game_record_id: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE installations SET provider_game_record_id = ? WHERE id = ?")
+        .bind(provider_game_record_id)
         .bind(installation_id)
         .execute(pool)
         .await?;
