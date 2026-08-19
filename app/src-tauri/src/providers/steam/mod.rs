@@ -104,6 +104,6 @@ impl AchievementProvider for SteamProvider {
             result.push(ProviderAchievementData { definition, unlock });
         }
 
-        Ok(result
+        Ok(result)
     }
 }
