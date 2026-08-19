@@ -84,6 +84,7 @@ impl AchievementProvider for SteamProvider {
                 name: def.display_name,
                 description: def.description,
                 icon_url: def.icon,
+                Fetched_at : chrono::Utc::now().to_rfc3339(),
             };
 
             let unlocked_at = unlock_data
