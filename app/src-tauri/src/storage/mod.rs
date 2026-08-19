@@ -257,32 +257,72 @@ pub async fn save_provider_achievements(
     achievements: &[crate::providers::ProviderAchievementData],
 ) -> Result<(), sqlx::Error> {
     let now = chrono::Utc::now().to_rfc3339();
+
     for item in achievements {
-        sqlx::query(
-            "INSERT INTO achievement_definitions
-            (id, provider_game_record_id, provider_achievement_key, name, description, icon_url, fetched_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)"
+        
+        let existing_def: Option<(String,)> = sqlx::query_as(
+            "SELECT id FROM achievement_definitions WHERE provider_game_record_id = ? AND provider_achievement_key = ?"
         )
-        .bind(&item.definition.id)
-        .bind(provider_game_record_id) // the real ID, patched in here
+        .bind(provider_game_record_id)
         .bind(&item.definition.provider_achievement_key)
-        .bind(&item.definition.name)
-        .bind(&item.definition.description)
-        .bind(&item.definition.icon_url)
-        .bind(&now)
-        .execute(pool)
+        .fetch_optional(pool)
         .await?;
 
-        sqlx::query(
-            "INSERT INTO achievement_unlocks (id, achievement_definition_id, unlocked_at, notified)
-            VALUES (?, ?, ?, ?)"
+        let definition_id = if let Some((id,)) = existing_def {
+            sqlx::query(
+                "UPDATE achievement_definitions SET name = ?, description = ?, icon_url = ?, fetched_at = ? WHERE id = ?"
+            )
+            .bind(&item.definition.name)
+            .bind(&item.definition.description)
+            .bind(&item.definition.icon_url)
+            .bind(&now)
+            .bind(&id)
+            .execute(pool)
+            .await?;
+            id
+        } else {
+            let new_id = uuid::Uuid::new_v4().to_string();
+            sqlx::query(
+                "INSERT INTO achievement_definitions (id, provider_game_record_id, provider_achievement_key, name, description, icon_url, fetched_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)"
+            )
+            .bind(&new_id)
+            .bind(provider_game_record_id)
+            .bind(&item.definition.provider_achievement_key)
+            .bind(&item.definition.name)
+            .bind(&item.definition.description)
+            .bind(&item.definition.icon_url)
+            .bind(&now)
+            .execute(pool)
+            .await?;
+            new_id
+        };
+
+        
+        let existing_unlock: Option<(String,)> = sqlx::query_as(
+            "SELECT id FROM achievement_unlocks WHERE achievement_definition_id = ?"
         )
-        .bind(&item.unlock.id)
-        .bind(&item.definition.id)
-        .bind(&item.unlock.unlocked_at)
-        .bind(item.unlock.notified)
-        .execute(pool)
+        .bind(&definition_id)
+        .fetch_optional(pool)
         .await?;
+
+        if let Some((id,)) = existing_unlock {
+            sqlx::query("UPDATE achievement_unlocks SET unlocked_at = ? WHERE id = ?")
+                .bind(&item.unlock.unlocked_at)
+                .bind(&id)
+                .execute(pool)
+                .await?;
+        } else {
+            sqlx::query(
+                "INSERT INTO achievement_unlocks (id, achievement_definition_id, unlocked_at, notified) VALUES (?, ?, ?, ?)"
+            )
+            .bind(uuid::Uuid::new_v4().to_string())
+            .bind(&definition_id)
+            .bind(&item.unlock.unlocked_at)
+            .bind(false)
+            .execute(pool)
+            .await?;
+        }
     }
     Ok(())
 }
