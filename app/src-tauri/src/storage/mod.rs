@@ -251,3 +251,38 @@ pub async fn link_installation_to_provider_game(
         .await?;
     Ok(())
 }
+pub async fn save_provider_achievements(
+    pool: &SqlitePool,
+    provider_game_record_id: &str,
+    achievements: &[crate::providers::ProviderAchievementData],
+) -> Result<(), sqlx::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    for item in achievements {
+        sqlx::query(
+            "INSERT INTO achievement_definitions
+            (id, provider_game_record_id, provider_achievement_key, name, description, icon_url, fetched_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(&item.definition.id)
+        .bind(provider_game_record_id) // the real ID, patched in here
+        .bind(&item.definition.provider_achievement_key)
+        .bind(&item.definition.name)
+        .bind(&item.definition.description)
+        .bind(&item.definition.icon_url)
+        .bind(&now)
+        .execute(pool)
+        .await?;
+
+        sqlx::query(
+            "INSERT INTO achievement_unlocks (id, achievement_definition_id, unlocked_at, notified)
+            VALUES (?, ?, ?, ?)"
+        )
+        .bind(&item.unlock.id)
+        .bind(&item.definition.id)
+        .bind(&item.unlock.unlocked_at)
+        .bind(item.unlock.notified)
+        .execute(pool)
+        .await?;
+    }
+    Ok(())
+}
