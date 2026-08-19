@@ -13,13 +13,15 @@ impl SteamProvider {
     }
 }
 
-
 #[derive(Deserialize)]
 struct SchemaResponse { game: SchemaGame }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct SchemaGame { available_game_stats: Option<AvailableGameStats> }
+struct SchemaGame {
+    game_name: Option<String>, 
+    available_game_stats: Option<AvailableGameStats>,
+}
 
 #[derive(Deserialize)]
 struct AvailableGameStats { achievements: Option<Vec<SchemaAchievement>> }
@@ -37,7 +39,11 @@ struct SchemaAchievement {
 struct PlayerAchievementsResponse { playerstats: PlayerStats }
 
 #[derive(Deserialize)]
-struct PlayerStats { achievements: Option<Vec<PlayerAchievement>> }
+struct PlayerStats {
+    success: bool,          
+    error: Option<String>,  
+    achievements: Option<Vec<PlayerAchievement>>,
+}
 
 #[derive(Deserialize)]
 struct PlayerAchievement { apiname: String, achieved: i32, unlocktime: i64 }
@@ -49,6 +55,7 @@ impl AchievementProvider for SteamProvider {
     async fn fetch_achievements(&self, source_id: &str) -> Result<Vec<ProviderAchievementData>, String> {
         let client = reqwest::Client::new();
 
+        
         let schema_url = format!(
             "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key={}&appid={}&format=json",
             self.api_key, source_id
@@ -62,6 +69,7 @@ impl AchievementProvider for SteamProvider {
             .and_then(|s| s.achievements)
             .unwrap_or_default();
 
+        
         let player_url = format!(
             "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid={}&key={}&steamid={}",
             source_id, self.api_key, self.steam_id
@@ -71,6 +79,12 @@ impl AchievementProvider for SteamProvider {
             .json().await
             .map_err(|e| e.to_string())?;
 
+        // we checkin success flag from Steam
+        if !player.playerstats.success {
+            return Err(player.playerstats.error
+                .unwrap_or_else(|| "Steam reported failure (possibly private profile)".to_string()));
+        }
+
         let unlocks = player.playerstats.achievements.unwrap_or_default();
 
         let mut result = Vec::new();
@@ -79,12 +93,12 @@ impl AchievementProvider for SteamProvider {
 
             let definition = AchievementDefinition {
                 id: uuid::Uuid::new_v4().to_string(),
-                provider_game_record_id: String::new(), 
+                provider_game_record_id: String::new(),
                 provider_achievement_key: def.name.clone(),
                 name: def.display_name,
                 description: def.description,
                 icon_url: def.icon,
-                fetched_at : chrono::Utc::now().to_rfc3339(),
+                fetched_at: chrono::Utc::now().to_rfc3339(),
             };
 
             let unlocked_at = unlock_data
