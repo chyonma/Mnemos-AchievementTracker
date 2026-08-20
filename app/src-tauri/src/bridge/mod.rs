@@ -63,3 +63,10 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
 
     Ok(reconciliation.new.len())
 }
+#[derive(serde::Serialize, sqlx::FromRow)]
+pub struct AchievementView {
+    pub name: String,
+    pub description: Option<String>,
+    pub icon_url: Option<String>,
+    pub unlocked_at: Option<String>,
+}
