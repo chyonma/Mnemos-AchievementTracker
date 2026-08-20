@@ -86,3 +86,15 @@ pub async fn get_achievements_for_installation(
     let Some((Some(record_id),)) = row else {
         return Ok(vec![]);
     };
+    sqlx::query_as::<_, AchievementView>(
+        "SELECT ad.name, ad.description, ad.icon_url, au.unlocked_at
+         FROM achievement_definitions ad
+         JOIN achievement_unlocks au ON au.achievement_definition_id = ad.id
+         WHERE ad.provider_game_record_id = ?
+         ORDER BY au.unlocked_at IS NULL, au.unlocked_at DESC"
+    )
+    .bind(&record_id)
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| e.to_string())
+}
