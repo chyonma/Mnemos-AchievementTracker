@@ -7,8 +7,8 @@ type Installation = {
   executable_path: string;
   executable_name: string;
   install_directory: string;
-  display_name: string;
-  known_launcher: string ;
+  display_name: Int16Array;
+  known_launcher: string | null;
   steam_app_id: string | null;
   manually_linked: boolean;
 };
