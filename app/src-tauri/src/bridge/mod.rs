@@ -70,3 +70,19 @@ pub struct AchievementView {
     pub icon_url: Option<String>,
     pub unlocked_at: Option<String>,
 }
+#[tauri::command]
+pub async fn get_achievements_for_installation(
+    state: State<'_, AppState>,
+    installation_id: String,
+) -> Result<Vec<AchievementView>, String> {
+    let row: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT provider_game_record_id FROM installations WHERE id = ?"
+    )
+    .bind(&installation_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let Some((Some(record_id),)) = row else {
+        return Ok(vec![]);
+    };
