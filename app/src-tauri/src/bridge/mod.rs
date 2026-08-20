@@ -2,6 +2,7 @@ use crate::core::Installation;
 use crate::AppState;
 use tauri::State;
 use crate::detection::GameDetector;
+use sqlx;
 
 #[tauri::command]
 pub async fn get_installations(state: State<'_, AppState>) -> Result<Vec<Installation>, String> {
@@ -62,3 +63,4 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
 
     Ok(reconciliation.new.len())
 }
+
