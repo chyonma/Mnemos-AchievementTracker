@@ -8,13 +8,21 @@ type Installation = {
   executable_name: string;
   install_directory: string;
   display_name: string;
-  known_launcher: string | null;
+  known_launcher: string ;
   steam_app_id: string | null;
   manually_linked: boolean;
 };
 
+type Achievement = {
+  name: string;
+  description: string | null;
+  icon_url: string | null;
+  unlocked_at: string | null;
+};
+
 function App() {
   const [installations, setInstallations] = useState<Installation[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   useEffect(() => {
     invoke<Installation[]>("get_installations")
@@ -50,6 +58,12 @@ function App() {
     }
   };
 
+  const handleViewAchievements = (installationId: string) => {
+    invoke<Achievement[]>("get_achievements_for_installation", { installationId })
+      .then(setAchievements)
+      .catch((err) => console.error("Failed to fetch achievements:", err));
+  };
+
   return (
     <div>
       <h1>Mnemos</h1>
@@ -62,9 +76,25 @@ function App() {
         {installations.map((inst) => (
           <li key={inst.id}>
             {inst.display_name} — {inst.executable_path}
+            <button onClick={() => handleViewAchievements(inst.id)}>View Achievements</button>
           </li>
         ))}
       </ul>
+
+      {achievements.length > 0 && (
+        <div>
+          <h3>
+            {achievements.filter((a) => a.unlocked_at).length} / {achievements.length} achievements
+          </h3>
+          <ul>
+            {achievements.map((a) => (
+              <li key={a.name}>
+                {a.unlocked_at ? "Unlocked!" : "Locked"} {a.name} {a.description && `— ${a.description}`}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
