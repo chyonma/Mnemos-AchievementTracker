@@ -63,4 +63,3 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
 
     Ok(reconciliation.new.len())
 }
-
