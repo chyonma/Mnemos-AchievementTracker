@@ -76,7 +76,7 @@ function App() {
         {installations.map((inst) => (
           <li key={inst.id}>
             {inst.display_name} — {inst.executable_path}
-            <button onClick={() => handleViewAchievements(inst.)}>View Achievements</button>
+            <button onClick={() => handleViewAchievements(inst.id)}>View Achievements</button>
           </li>
         ))}
       </ul>
