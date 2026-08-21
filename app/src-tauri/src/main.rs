@@ -2,7 +2,7 @@ mod core;
 mod storage;
 mod bridge;
 mod detection;
-mod providers; // <-- ADD THIS
+mod providers;
 
 use sqlx::SqlitePool;
 use std::collections::HashMap;
@@ -55,6 +55,23 @@ async fn main() {
             let unlocked_count = data.iter().filter(|d| d.unlock.unlocked_at.is_some()).count();
             println!("Synced {} total, {} unlocked ({:.0}%)", data.len(), unlocked_count,
                 (unlocked_count as f64 / data.len() as f64) * 100.0);
+
+            // TEMPORARY: manually link the first installation to Elden Ring's provider record,
+            // purely to prove the read/display path — real auto-linking is the next step after this.
+            if let Ok(installations) = storage::get_all_installations(&pool).await {
+                if let Some(test_installation) = installations.first() {
+                    let _ = storage::link_installation_to_provider_game(
+                        &pool,
+                        &test_installation.id,
+                        &record_id,
+                    )
+                    .await;
+                    println!(
+                        "Linked installation {} to Elden Ring for testing",
+                        test_installation.id
+                    );
+                }
+            }
         }
         Err(e) => println!("Steam fetch failed: {}", e),
     }
