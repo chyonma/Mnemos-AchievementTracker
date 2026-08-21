@@ -61,7 +61,6 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
         }
     }
 
-    // Resolve Steam App IDs from manifests and link only Steam-tagged installations
     let steamapps_dirs = [
         r"C:\Program Files (x86)\Steam\steamapps".to_string(),
         r"C:\Program Files\Steam\steamapps".to_string(),
