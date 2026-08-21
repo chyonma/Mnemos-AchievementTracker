@@ -5,10 +5,9 @@ pub struct RawUnlock {
 }
 
 #[async_trait::async_trait]
-pub trait AchievementProvider {
+pub trait AchievementDefinitionSource {
     fn provider_key(&self) -> &'static str;
-
-    async fn fetch_achievements(&self, source_id: &str) -> Result<Vec<ProviderAchievementData>, String>;
+    async fn fetch_definitions(&self, source_id: &str) -> Result<Vec<AchievementDefinition>, String>;
 }
 
 pub mod steam;
