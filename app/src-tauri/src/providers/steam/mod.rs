@@ -1,6 +1,9 @@
 use crate::providers::{AchievementDefinitionSource, AchievementUnlockSource};
 use crate::core::AchievementDefinition;
 use serde::Deserialize;
+use std::fs;
+use std::collections::HashMap;
+use std::path::Path;
 
 pub struct SteamProvider {
     api_key: String,
@@ -110,4 +113,39 @@ impl AchievementUnlockSource for SteamProvider {
             },
         }).collect())
     }
+}
+
+//  Steam App id resolutn from manifest files 
+
+pub fn resolve_app_ids(steamapps_dir: &str) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    let Ok(entries) = fs::read_dir(Path::new(steamapps_dir)) else { return map };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let is_manifest = path.file_name().and_then(|n| n.to_str())
+            .map(|n| n.starts_with("appmanifest_") && n.ends_with(".acf"))
+            .unwrap_or(false);
+        if !is_manifest { continue; }
+
+        let Ok(contents) = fs::read_to_string(&path) else { continue };
+        let appid = extract_acf_field(&contents, "appid");
+        let installdir = extract_acf_field(&contents, "installdir");
+
+        if let (Some(appid), Some(installdir)) = (appid, installdir) {
+            map.insert(installdir, appid);
+        }
+    }
+    map
+}
+
+fn extract_acf_field(contents: &str, key: &str) -> Option<String> {
+    for line in contents.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with(&format!("\"{}\"", key)) {
+            let parts: Vec<&str> = trimmed.split('"').filter(|s| !s.trim().is_empty()).collect();
+            if parts.len() >= 2 { return Some(parts[1].to_string()); }
+        }
+    }
+    None
 }
