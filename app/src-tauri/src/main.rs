@@ -37,51 +37,40 @@ async fn main() {
         println!("Recovered {} orphaned session(s) from a previous run", orphaned.len());
     }
 
+    // ================= TEMPORARY STEAM API TEST =================
     dotenvy::dotenv().ok();
     let steam_api_key = std::env::var("STEAM_API_KEY").expect("STEAM_API_KEY not set in .env");
     let steam_id = std::env::var("STEAM_ID").expect("STEAM_ID not set in .env");
     let steam = providers::steam::SteamProvider::new(steam_api_key, steam_id);
 
-    use providers::AchievementProvider;
+    use providers::{AchievementDefinitionSource, AchievementUnlockSource};
     let test_app_id = "1245620"; // Elden Ring
 
-    match steam.fetch_achievements(test_app_id).await {
-        Ok(data) => {
+    let definitions = steam.fetch_definitions(test_app_id).await;
+    let unlocks = steam.fetch_unlocks(test_app_id).await;
+
+    match (definitions, unlocks) {
+        (Ok(defs), Ok(raw_unlocks)) => {
+            let merged = core::merge_achievements(defs, &raw_unlocks);
             let record_id = storage::get_or_create_provider_game_record(&pool, "steam", test_app_id, "Elden Ring")
                 .await.expect("failed to get/create provider game record");
-            storage::save_provider_achievements(&pool, &record_id, &data)
+            storage::save_provider_achievements(&pool, &record_id, &merged)
                 .await.expect("failed to save achievements");
 
-            let unlocked_count = data.iter().filter(|d| d.unlock.unlocked_at.is_some()).count();
-            println!("Synced {} total, {} unlocked ({:.0}%)", data.len(), unlocked_count,
-                (unlocked_count as f64 / data.len() as f64) * 100.0);
-
-            // TEMPORARY: manually link the first installation to Elden Ring's provider record,
-            // purely to prove the read/display path — real auto-linking is the next step after this.
-            if let Ok(installations) = storage::get_all_installations(&pool).await {
-                if let Some(test_installation) = installations.first() {
-                    let _ = storage::link_installation_to_provider_game(
-                        &pool,
-                        &test_installation.id,
-                        &record_id,
-                    )
-                    .await;
-                    println!(
-                        "Linked installation {} to Elden Ring for testing",
-                        test_installation.id
-                    );
-                }
-            }
+            let unlocked_count = merged.iter().filter(|(_, u)| u.is_some()).count();
+            println!("Synced {} total, {} unlocked ({:.0}%)", merged.len(), unlocked_count,
+                (unlocked_count as f64 / merged.len() as f64) * 100.0);
         }
-        Err(e) => println!("Steam fetch failed: {}", e),
+        (Err(e), _) | (_, Err(e)) => println!("Steam fetch failed: {}", e),
     }
+    // ================= END TEMPORARY TEST =================
 
     let active_sessions: Arc<Mutex<HashMap<String, core::Session>>> =
         Arc::new(Mutex::new(HashMap::new()));
     let polling_pool = pool.clone();
     let polling_sessions = active_sessions.clone();
     tokio::spawn(async move {
-        
+
     });
 
     tauri::Builder::default()
