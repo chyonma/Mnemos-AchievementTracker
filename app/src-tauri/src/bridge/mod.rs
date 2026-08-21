@@ -61,8 +61,49 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
         }
     }
 
+    // Resolve Steam App IDs from manifests and link only Steam-tagged installations
+    let steamapps_dirs = [
+        r"C:\Program Files (x86)\Steam\steamapps".to_string(),
+        r"C:\Program Files\Steam\steamapps".to_string(),
+    ];
+    let mut app_id_map = std::collections::HashMap::new();
+    for dir in &steamapps_dirs {
+        app_id_map.extend(crate::providers::steam::resolve_app_ids(dir));
+    }
+
+    for installation in &reconciliation.new {
+        if installation.known_launcher.as_deref() != Some("steam") {
+            continue; // non-Steam untouched
+        }
+        let Some(folder_name) = std::path::Path::new(&installation.install_directory)
+            .file_name()
+            .and_then(|n| n.to_str())
+        else {
+            continue;
+        };
+
+        if let Some(app_id) = app_id_map.get(folder_name) {
+            if let Ok(record_id) = crate::storage::get_or_create_provider_game_record(
+                &state.db,
+                "steam",
+                app_id,
+                &installation.display_name,
+            )
+            .await
+            {
+                let _ = crate::storage::link_installation_to_provider_game(
+                    &state.db,
+                    &installation.id,
+                    &record_id,
+                )
+                .await;
+            }
+        }
+    }
+
     Ok(reconciliation.new.len())
 }
+
 #[derive(serde::Serialize, sqlx::FromRow)]
 pub struct AchievementView {
     pub name: String,
@@ -70,6 +111,7 @@ pub struct AchievementView {
     pub icon_url: Option<String>,
     pub unlocked_at: Option<String>,
 }
+
 #[tauri::command]
 pub async fn get_achievements_for_installation(
     state: State<'_, AppState>,
@@ -86,6 +128,7 @@ pub async fn get_achievements_for_installation(
     let Some((Some(record_id),)) = row else {
         return Ok(vec![]);
     };
+
     sqlx::query_as::<_, AchievementView>(
         "SELECT ad.name, ad.description, ad.icon_url, au.unlocked_at
          FROM achievement_definitions ad
