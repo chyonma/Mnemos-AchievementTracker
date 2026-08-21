@@ -1,5 +1,4 @@
-use crate::core::{AchievementDefinition, AchievementUnlock};
-
+use crate::core::AchievementDefinition;
 pub struct ProviderAchievementData {
     pub definition: AchievementDefinition,
     pub unlock: AchievementUnlock,
