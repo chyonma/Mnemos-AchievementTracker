@@ -162,3 +162,15 @@ pub fn recover_orphaned_session(started_at: &str, last_heartbeat: &Option<String
 
     (ended_at, duration)
 }
+
+pub fn merge_achievements(
+    definitions: Vec<AchievementDefinition>,
+    unlocks: &[crate::providers::RawUnlock],
+) -> Vec<(AchievementDefinition, Option<String>)> {
+    definitions.into_iter().map(|def| {
+        let unlocked_at = unlocks.iter()
+            .find(|u| u.provider_achievement_key == def.provider_achievement_key)
+            .and_then(|u| u.unlocked_at.clone());
+        (def, unlocked_at)
+    }).collect()
+}
