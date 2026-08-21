@@ -1,7 +1,7 @@
 use crate::core::AchievementDefinition;
-pub struct ProviderAchievementData {
-    pub definition: AchievementDefinition,
-    pub unlock: AchievementUnlock,
+pub struct RawUnlock {
+    pub provider_achievement_key: String,
+    pub unlocked_at: Option<String>,
 }
 
 #[async_trait::async_trait]
