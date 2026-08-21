@@ -1,5 +1,5 @@
-use crate::providers::{AchievementProvider, ProviderAchievementData};
-use crate::core::{AchievementDefinition, AchievementUnlock};
+use crate::providers::{AchievementDefinitionSource, AchievementUnlockSource};
+use crate::core::AchievementDefinition;
 use serde::Deserialize;
 
 pub struct SteamProvider {
@@ -19,7 +19,7 @@ struct SchemaResponse { game: SchemaGame }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SchemaGame {
-    game_name: Option<String>, 
+    game_name: Option<String>,
     available_game_stats: Option<AvailableGameStats>,
 }
 
@@ -40,8 +40,8 @@ struct PlayerAchievementsResponse { playerstats: PlayerStats }
 
 #[derive(Deserialize)]
 struct PlayerStats {
-    success: bool,          
-    error: Option<String>,  
+    success: bool,
+    error: Option<String>,
     achievements: Option<Vec<PlayerAchievement>>,
 }
 
@@ -49,13 +49,11 @@ struct PlayerStats {
 struct PlayerAchievement { apiname: String, achieved: i32, unlocktime: i64 }
 
 #[async_trait::async_trait]
-impl AchievementProvider for SteamProvider {
+impl AchievementDefinitionSource for SteamProvider {
     fn provider_key(&self) -> &'static str { "steam" }
 
-    async fn fetch_achievements(&self, source_id: &str) -> Result<Vec<ProviderAchievementData>, String> {
+    async fn fetch_definitions(&self, source_id: &str) -> Result<Vec<AchievementDefinition>, String> {
         let client = reqwest::Client::new();
-
-        
         let schema_url = format!(
             "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key={}&appid={}&format=json",
             self.api_key, source_id
@@ -65,11 +63,28 @@ impl AchievementProvider for SteamProvider {
             .json().await
             .map_err(|e| e.to_string())?;
 
-        let definitions = schema.game.available_game_stats
+        let raw = schema.game.available_game_stats
             .and_then(|s| s.achievements)
             .unwrap_or_default();
 
-        
+        Ok(raw.into_iter().map(|def| AchievementDefinition {
+            id: uuid::Uuid::new_v4().to_string(),
+            provider_game_record_id: String::new(),
+            provider_achievement_key: def.name,
+            name: def.display_name,
+            description: def.description,
+            icon_url: def.icon,
+            fetched_at: chrono::Utc::now().to_rfc3339(),
+        }).collect())
+    }
+}
+
+#[async_trait::async_trait]
+impl AchievementUnlockSource for SteamProvider {
+    fn provider_key(&self) -> &'static str { "steam" }
+
+    async fn fetch_unlocks(&self, source_id: &str) -> Result<Vec<crate::providers::RawUnlock>, String> {
+        let client = reqwest::Client::new();
         let player_url = format!(
             "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid={}&key={}&steamid={}",
             source_id, self.api_key, self.steam_id
@@ -79,46 +94,20 @@ impl AchievementProvider for SteamProvider {
             .json().await
             .map_err(|e| e.to_string())?;
 
-        // we checkin success flag from Steam
         if !player.playerstats.success {
             return Err(player.playerstats.error
-                .unwrap_or_else(|| "Steam reported failure (possibly private profile)".to_string()));
+                .unwrap_or_else(|| "Steam reported failure".to_string()));
         }
 
         let unlocks = player.playerstats.achievements.unwrap_or_default();
-
-        let mut result = Vec::new();
-        for def in definitions {
-            let unlock_data = unlocks.iter().find(|u| u.apiname == def.name);
-
-            let definition = AchievementDefinition {
-                id: uuid::Uuid::new_v4().to_string(),
-                provider_game_record_id: String::new(),
-                provider_achievement_key: def.name.clone(),
-                name: def.display_name,
-                description: def.description,
-                icon_url: def.icon,
-                fetched_at: chrono::Utc::now().to_rfc3339(),
-            };
-
-            let unlocked_at = unlock_data
-                .filter(|u| u.achieved == 1)
-                .map(|u| {
-                    chrono::DateTime::from_timestamp(u.unlocktime, 0)
-                        .map(|dt| dt.to_rfc3339())
-                        .unwrap_or_else(|| u.unlocktime.to_string())
-                });
-
-            let unlock = AchievementUnlock {
-                id: uuid::Uuid::new_v4().to_string(),
-                achievement_definition_id: definition.id.clone(),
-                unlocked_at,
-                notified: false,
-            };
-
-            result.push(ProviderAchievementData { definition, unlock });
-        }
-
-        Ok(result)
+        Ok(unlocks.into_iter().map(|u| crate::providers::RawUnlock {
+            provider_achievement_key: u.apiname,
+            unlocked_at: if u.achieved == 1 {
+                chrono::DateTime::from_timestamp(u.unlocktime, 0)
+                    .map(|dt| dt.to_rfc3339())
+            } else {
+                None
+            },
+        }).collect())
     }
 }
