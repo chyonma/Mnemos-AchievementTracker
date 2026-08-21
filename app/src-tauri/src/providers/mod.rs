@@ -1,3 +1,6 @@
+use std::fs;
+use std::collections::HashMap;
+use std::path::Path;
 use crate::core::AchievementDefinition;
 pub struct RawUnlock {
     pub provider_achievement_key: String,
