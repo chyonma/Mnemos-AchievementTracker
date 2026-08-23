@@ -103,7 +103,7 @@ function App() {
         {installations.map((inst) => (
           <li key={inst.id}>
             {inst.display_name} — {inst.executable_path}
-            {inst.manually_linked && " (Manually Added)"}
+            {inst.manually_linked && ""}
             <button onClick={() => handleViewAchievements(inst.id)}>View Achievements</button>
           </li>
         ))}
