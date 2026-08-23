@@ -151,9 +151,7 @@ pub async fn add_installation_manually(
         display_name,
     );
 
-    // Best-effort: if this happens to sit under a known Steam steamapps/common folder,
-    // tag it so try_link_steam_installation can resolve it.
-    // Simple substring check, not magic.
+    
     if executable_path.to_lowercase().contains("steamapps") {
         installation.known_launcher = Some("steam".to_string());
     }
