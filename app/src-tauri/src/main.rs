@@ -81,7 +81,8 @@ async fn main() {
             bridge::scan_library,
             bridge::add_watched_folder,
             bridge::get_watched_folders,
-            bridge::get_achievements_for_installation
+            bridge::get_achievements_for_installation,
+            bridge::add_installation_manually
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
