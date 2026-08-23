@@ -45,7 +45,6 @@ impl GameDetector for WindowsGameDetector {
     }
 }
 
-// ✅ REPLACE THIS FUNCTION with the new one below
 fn find_main_executable(game_dir: &Path) -> Option<Installation> {
     let Ok(entries) = fs::read_dir(game_dir) else { return None };
 
@@ -55,7 +54,7 @@ fn find_main_executable(game_dir: &Path) -> Option<Installation> {
         .collect();
 
     if exes.len() != 1 {
-        return None; // Ambiguous—skip, let user link manually.
+        return None; //  let user link manually.
     }
 
     let exe_path = &exes[0];
