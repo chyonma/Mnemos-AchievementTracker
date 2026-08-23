@@ -112,7 +112,6 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
         }
     }
 
-    // ⬇️ REPLACED the huge inline Steam block with this clean loop:
     for installation in &reconciliation.new {
         try_link_steam_installation(&state, installation).await;
     }
