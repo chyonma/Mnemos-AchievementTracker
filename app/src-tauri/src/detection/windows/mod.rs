@@ -54,7 +54,7 @@ fn find_main_executable(game_dir: &Path) -> Option<Installation> {
         .collect();
 
     if exes.len() != 1 {
-        return None; //  let user link manually.
+        return None;  // let user link manually.
     }
 
     let exe_path = &exes[0];
