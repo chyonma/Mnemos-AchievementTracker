@@ -18,7 +18,6 @@ async fn try_link_steam_installation(state: &State<'_, AppState>, installation: 
         app_id_map.extend(crate::providers::steam::resolve_app_ids(dir));
     }
 
-    // Walk EVERY ancestor folder of the exe path
     let exe_path = std::path::Path::new(&installation.executable_path);
     let mut matched_app_id: Option<String> = None;
 
@@ -40,9 +39,6 @@ async fn try_link_steam_installation(state: &State<'_, AppState>, installation: 
     }
 }
 
-// ============================================================
-//  EXISTING COMMANDS
-// ============================================================
 
 #[tauri::command]
 pub async fn get_installations(state: State<'_, AppState>) -> Result<Vec<Installation>, String> {
