@@ -5,44 +5,35 @@ use crate::detection::GameDetector;
 use sqlx;
 
 
-async fn try_link_steam_installation(state: &State<'_, AppState>, installation: &Installation) {
-    if installation.known_launcher.as_deref() != Some("steam") {
-        return;
-    }
-
+async fn try_link_steam_installation(state: &State<'_, AppState>, installation: &crate::core::Installation) {
     let steamapps_dirs = [
         r"C:\Program Files (x86)\Steam\steamapps".to_string(),
         r"C:\Program Files\Steam\steamapps".to_string(),
     ];
-
     let mut app_id_map = std::collections::HashMap::new();
     for dir in &steamapps_dirs {
         app_id_map.extend(crate::providers::steam::resolve_app_ids(dir));
     }
 
-    let Some(folder_name) = std::path::Path::new(&installation.install_directory)
-        .file_name()
-        .and_then(|n| n.to_str())
-    else {
-        return;
-    };
+    // Walk EVERY ancestor folder of the exe path
+    let exe_path = std::path::Path::new(&installation.executable_path);
+    let mut matched_app_id: Option<String> = None;
 
-    if let Some(app_id) = app_id_map.get(folder_name) {
-        if let Ok(record_id) = crate::storage::get_or_create_provider_game_record(
-            &state.db,
-            "steam",
-            app_id,
-            &installation.display_name,
-        )
-        .await
-        {
-            let _ = crate::storage::link_installation_to_provider_game(
-                &state.db,
-                &installation.id,
-                &record_id,
-            )
-            .await;
+    for ancestor in exe_path.ancestors() {
+        if let Some(name) = ancestor.file_name().and_then(|n| n.to_str()) {
+            if let Some(app_id) = app_id_map.get(name) {
+                matched_app_id = Some(app_id.clone());
+                break;
+            }
         }
+    }
+
+    let Some(app_id) = matched_app_id else { return }; // Not a Steam install, skip
+
+    if let Ok(record_id) = crate::storage::get_or_create_provider_game_record(
+        &state.db, "steam", &app_id, &installation.display_name
+    ).await {
+        let _ = crate::storage::link_installation_to_provider_game(&state.db, &installation.id, &record_id).await;
     }
 }
 
