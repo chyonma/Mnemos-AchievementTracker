@@ -4,10 +4,7 @@ use tauri::State;
 use crate::detection::GameDetector;
 use sqlx;
 
-// ============================================================
-//  SHARED HELPER: Links a Steam installation by walking ancestors
-//  of the exe path to find a folder name that matches a Steam manifest.
-// ============================================================
+
 async fn try_link_steam_installation(state: &State<'_, AppState>, installation: &crate::core::Installation) {
     let steamapps_dirs = [
         r"C:\Program Files (x86)\Steam\steamapps".to_string(),
