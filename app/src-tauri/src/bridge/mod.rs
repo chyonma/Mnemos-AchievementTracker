@@ -15,7 +15,6 @@ async fn try_link_steam_installation(state: &State<'_, AppState>, installation: 
         app_id_map.extend(crate::providers::steam::resolve_app_ids(dir));
     }
 
-    // Walk EVERY ancestor folder of the exe path
     let exe_path = std::path::Path::new(&installation.executable_path);
     let mut matched_app_id: Option<String> = None;
 
@@ -28,7 +27,7 @@ async fn try_link_steam_installation(state: &State<'_, AppState>, installation: 
         }
     }
 
-    let Some(app_id) = matched_app_id else { return }; // Not a Steam install, skip
+    let Some(app_id) = matched_app_id else { return }; 
 
     if let Ok(record_id) = crate::storage::get_or_create_provider_game_record(
         &state.db, "steam", &app_id, &installation.display_name
