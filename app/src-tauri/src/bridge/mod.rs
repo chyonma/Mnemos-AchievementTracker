@@ -108,9 +108,7 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
     Ok(reconciliation.new.len())
 }
 
-// ============================================================
-//  FIXED: Manual Add with proper display name extraction
-// ============================================================
+
 
 #[tauri::command]
 pub async fn add_installation_manually(
@@ -123,7 +121,6 @@ pub async fn add_installation_manually(
         .ok_or("Invalid executable path")?
         .to_string();
 
-    // Default fallback values
     let mut install_directory = path.parent()
         .and_then(|p| p.to_str())
         .ok_or("Invalid executable path")?
@@ -135,7 +132,6 @@ pub async fn add_installation_manually(
         .to_string();
     let mut known_launcher: Option<String> = None;
 
-    // Walk ancestors to find the folder directly inside "steamapps/common"
     let components: Vec<_> = path.components().collect();
     for (i, component) in components.iter().enumerate() {
         if let Some(segment) = component.as_os_str().to_str() {
@@ -180,16 +176,12 @@ pub async fn add_installation_manually(
     Ok(())
 }
 
-// ============================================================
-//  NEW: Sync Achievements (fetches from Steam API and saves to DB)
-// ============================================================
 
 #[tauri::command]
 pub async fn sync_achievements_for_installation(
     state: State<'_, AppState>,
     installation_id: String,
 ) -> Result<usize, String> {
-    // 1. Get the linked provider record for this installation
     let row: Option<(String, String, String)> = sqlx::query_as(
         "SELECT pgr.id, pgr.provider, pgr.provider_game_id 
          FROM provider_game_records pgr
@@ -207,7 +199,7 @@ pub async fn sync_achievements_for_installation(
         return Err("Only Steam is supported currently".to_string());
     }
 
-    // 2. Fetch from Steam API
+ 
     dotenvy::dotenv().ok();
     let steam_api_key = std::env::var("STEAM_API_KEY").map_err(|_| "STEAM_API_KEY not set in .env")?;
     let steam_id = std::env::var("STEAM_ID").map_err(|_| "STEAM_ID not set in .env")?;
@@ -217,14 +209,13 @@ pub async fn sync_achievements_for_installation(
     let unlocks = steam.fetch_unlocks(&provider_game_id).await.map_err(|e| e.to_string())?;
     let merged = crate::core::merge_achievements(definitions, &unlocks);
 
-    // 3. Save to database
+    
     crate::storage::save_provider_achievements(&state.db, &record_id, &merged)
         .await
         .map_err(|e| e.to_string())?;
 
     Ok(merged.len())
 }
-
 
 #[derive(serde::Serialize, sqlx::FromRow)]
 pub struct AchievementView {
