@@ -4,10 +4,7 @@ use tauri::State;
 use crate::detection::GameDetector;
 use sqlx;
 
-// ============================================================
-//  SHARED HELPER: Tries to link a Steam installation to its
-//  provider game record. Used by both scan & manual-add.
-// ============================================================
+
 async fn try_link_steam_installation(state: &State<'_, AppState>, installation: &Installation) {
     if installation.known_launcher.as_deref() != Some("steam") {
         return;
