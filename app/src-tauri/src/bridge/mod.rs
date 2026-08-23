@@ -9,7 +9,6 @@ use sqlx;
 //  provider game record. Used by both scan & manual-add.
 // ============================================================
 async fn try_link_steam_installation(state: &State<'_, AppState>, installation: &Installation) {
-    // Only attempt linking if this installation was tagged as Steam
     if installation.known_launcher.as_deref() != Some("steam") {
         return;
     }
@@ -50,10 +49,7 @@ async fn try_link_steam_installation(state: &State<'_, AppState>, installation: 
     }
 }
 
-// ============================================================
-//  EXISTING COMMANDS (kept exactly as they were, except
-//  scan_library which now uses the shared helper above).
-// ============================================================
+
 
 #[tauri::command]
 pub async fn get_installations(state: State<'_, AppState>) -> Result<Vec<Installation>, String> {
