@@ -82,6 +82,18 @@ function App() {
     }
   };
 
+  const handleSyncAchievements = async (installationId: string) => {
+    try {
+      console.log("Syncing achievements for:", installationId);
+      await invoke("sync_achievements_for_installation", { installationId });
+      const result = await invoke<Achievement[]>("get_achievements_for_installation", { installationId });
+      setAchievements(result);
+      console.log("Sync complete, fetched achievements");
+    } catch (err) {
+      console.error("Sync failed:", err);
+    }
+  };
+
   const handleViewAchievements = (installationId: string) => {
     invoke<Achievement[]>("get_achievements_for_installation", { installationId })
       .then(setAchievements)
@@ -104,12 +116,13 @@ function App() {
           <li key={inst.id}>
             {inst.display_name} — {inst.executable_path}
             {inst.manually_linked && ""}
+            <button onClick={() => handleSyncAchievements(inst.id)}>Sync Achievements</button>
             <button onClick={() => handleViewAchievements(inst.id)}>View Achievements</button>
           </li>
         ))}
       </ul>
 
-      {achievements.length > 0 && (
+      {achievements.length > 0 ? (
         <div>
           <h3>
             {achievements.filter((a) => a.unlocked_at).length} / {achievements.length} achievements
@@ -122,6 +135,8 @@ function App() {
             ))}
           </ul>
         </div>
+      ) : (
+        <p>No achievement data yet — try Sync Achievements first.</p>
       )}
     </div>
   );
