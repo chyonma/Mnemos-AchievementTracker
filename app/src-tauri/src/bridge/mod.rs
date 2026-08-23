@@ -171,9 +171,7 @@ pub async fn add_installation_manually(
     Ok(())
 }
 
-// ============================================================
-//  ACHIEVEMENT COMMAND (unchanged)
-// ============================================================
+ 
 
 #[derive(serde::Serialize, sqlx::FromRow)]
 pub struct AchievementView {
