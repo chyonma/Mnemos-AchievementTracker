@@ -23,6 +23,7 @@ type Achievement = {
 function App() {
   const [installations, setInstallations] = useState<Installation[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [isAdding, setIsAdding] = useState(false); // 👈 NEW: loading state for button
 
   useEffect(() => {
     invoke<Installation[]>("get_installations")
@@ -58,6 +59,32 @@ function App() {
     }
   };
 
+  // 👇 NEW: Handler for the "Add Game Manually" button
+  const handleAddManually = async () => {
+    try {
+      setIsAdding(true);
+      const selected = await open({
+        directory: false, // Important: file picker, NOT directory picker
+        multiple: false,
+        title: "Select the main .exe file",
+        filters: [{ name: "Executable", extensions: ["exe"] }],
+      });
+
+      if (typeof selected === "string") {
+        await invoke("add_installation_manually", { executablePath: selected });
+        console.log("Manually added:", selected);
+        
+        // Refresh the installation list
+        const result = await invoke<Installation[]>("get_installations");
+        setInstallations(result);
+      }
+    } catch (err) {
+      console.error("Failed to add game manually:", err);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   const handleViewAchievements = (installationId: string) => {
     invoke<Achievement[]>("get_achievements_for_installation", { installationId })
       .then(setAchievements)
@@ -71,11 +98,17 @@ function App() {
 
       <button onClick={handleScan}>Scan Library</button>
       <button onClick={handleAddFolder}>Add Watched Folder</button>
+      
+      {/* 👇 NEW: Manual Add Button */}
+      <button onClick={handleAddManually} disabled={isAdding}>
+        {isAdding ? "Adding..." : "Add Game Manually (exe)"}
+      </button>
 
       <ul>
         {installations.map((inst) => (
           <li key={inst.id}>
             {inst.display_name} — {inst.executable_path}
+            {inst.manually_linked && " (Manually Added)"} {/* 👈 NEW: tag to show manual entries */}
             <button onClick={() => handleViewAchievements(inst.id)}>View Achievements</button>
           </li>
         ))}
@@ -89,7 +122,7 @@ function App() {
           <ul>
             {achievements.map((a) => (
               <li key={a.name}>
-                {a.unlocked_at ? "Unlocked!" : "Locked"} {a.name} {a.description && `— ${a.description}`}
+                {a.unlocked_at ? "✅ Unlocked!" : "🔒 Locked"} {a.name} {a.description && `— ${a.description}`}
               </li>
             ))}
           </ul>
