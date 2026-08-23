@@ -225,9 +225,6 @@ pub async fn sync_achievements_for_installation(
     Ok(merged.len())
 }
 
-// ============================================================
-//  ACHIEVEMENT VIEW (reads from DB)
-// ============================================================
 
 #[derive(serde::Serialize, sqlx::FromRow)]
 pub struct AchievementView {
