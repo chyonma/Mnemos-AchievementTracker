@@ -120,9 +120,6 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
     Ok(reconciliation.new.len())
 }
 
-// ============================================================
-//  NEW COMMAND: Manual game linking (file picker from frontend)
-// ============================================================
 
 #[tauri::command]
 pub async fn add_installation_manually(
