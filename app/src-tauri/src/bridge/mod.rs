@@ -158,7 +158,6 @@ pub async fn add_installation_manually(
         installation.known_launcher = Some("steam".to_string());
     }
 
-    // Mark it so the UI can distinguish manually-added games from auto-discovered ones
     installation.manually_linked = true;
 
     crate::storage::insert_installation(&state.db, &installation)
