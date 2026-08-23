@@ -165,7 +165,6 @@ pub async fn add_installation_manually(
         .await
         .map_err(|e| e.to_string())?;
 
-    // Attempt Steam linking (if applicable)
     try_link_steam_installation(&state, &installation).await;
 
     Ok(())
