@@ -4,6 +4,57 @@ use tauri::State;
 use crate::detection::GameDetector;
 use sqlx;
 
+// ============================================================
+//  SHARED HELPER: Tries to link a Steam installation to its
+//  provider game record. Used by both scan & manual-add.
+// ============================================================
+async fn try_link_steam_installation(state: &State<'_, AppState>, installation: &Installation) {
+    // Only attempt linking if this installation was tagged as Steam
+    if installation.known_launcher.as_deref() != Some("steam") {
+        return;
+    }
+
+    let steamapps_dirs = [
+        r"C:\Program Files (x86)\Steam\steamapps".to_string(),
+        r"C:\Program Files\Steam\steamapps".to_string(),
+    ];
+
+    let mut app_id_map = std::collections::HashMap::new();
+    for dir in &steamapps_dirs {
+        app_id_map.extend(crate::providers::steam::resolve_app_ids(dir));
+    }
+
+    let Some(folder_name) = std::path::Path::new(&installation.install_directory)
+        .file_name()
+        .and_then(|n| n.to_str())
+    else {
+        return;
+    };
+
+    if let Some(app_id) = app_id_map.get(folder_name) {
+        if let Ok(record_id) = crate::storage::get_or_create_provider_game_record(
+            &state.db,
+            "steam",
+            app_id,
+            &installation.display_name,
+        )
+        .await
+        {
+            let _ = crate::storage::link_installation_to_provider_game(
+                &state.db,
+                &installation.id,
+                &record_id,
+            )
+            .await;
+        }
+    }
+}
+
+// ============================================================
+//  EXISTING COMMANDS (kept exactly as they were, except
+//  scan_library which now uses the shared helper above).
+// ============================================================
+
 #[tauri::command]
 pub async fn get_installations(state: State<'_, AppState>) -> Result<Vec<Installation>, String> {
     crate::storage::get_all_installations(&state.db)
@@ -61,47 +112,68 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
         }
     }
 
-    let steamapps_dirs = [
-        r"C:\Program Files (x86)\Steam\steamapps".to_string(),
-        r"C:\Program Files\Steam\steamapps".to_string(),
-    ];
-    let mut app_id_map = std::collections::HashMap::new();
-    for dir in &steamapps_dirs {
-        app_id_map.extend(crate::providers::steam::resolve_app_ids(dir));
-    }
-
+    // ⬇️ REPLACED the huge inline Steam block with this clean loop:
     for installation in &reconciliation.new {
-        if installation.known_launcher.as_deref() != Some("steam") {
-            continue; // non-Steam untouched
-        }
-        let Some(folder_name) = std::path::Path::new(&installation.install_directory)
-            .file_name()
-            .and_then(|n| n.to_str())
-        else {
-            continue;
-        };
-
-        if let Some(app_id) = app_id_map.get(folder_name) {
-            if let Ok(record_id) = crate::storage::get_or_create_provider_game_record(
-                &state.db,
-                "steam",
-                app_id,
-                &installation.display_name,
-            )
-            .await
-            {
-                let _ = crate::storage::link_installation_to_provider_game(
-                    &state.db,
-                    &installation.id,
-                    &record_id,
-                )
-                .await;
-            }
-        }
+        try_link_steam_installation(&state, installation).await;
     }
 
     Ok(reconciliation.new.len())
 }
+
+// ============================================================
+//  NEW COMMAND: Manual game linking (file picker from frontend)
+// ============================================================
+
+#[tauri::command]
+pub async fn add_installation_manually(
+    state: State<'_, AppState>,
+    executable_path: String,
+) -> Result<(), String> {
+    let path = std::path::Path::new(&executable_path);
+    let executable_name = path.file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("Invalid executable path")?
+        .to_string();
+    let install_directory = path.parent()
+        .and_then(|p| p.to_str())
+        .ok_or("Invalid executable path")?
+        .to_string();
+    let display_name = std::path::Path::new(&install_directory)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or(&executable_name)
+        .to_string();
+
+    let mut installation = Installation::new(
+        executable_path.clone(),
+        executable_name,
+        install_directory.clone(),
+        display_name,
+    );
+
+    // Best-effort: if this happens to sit under a known Steam steamapps/common folder,
+    // tag it so try_link_steam_installation can resolve it.
+    // Simple substring check, not magic.
+    if executable_path.to_lowercase().contains("steamapps") {
+        installation.known_launcher = Some("steam".to_string());
+    }
+
+    // Mark it so the UI can distinguish manually-added games from auto-discovered ones
+    installation.manually_linked = true;
+
+    crate::storage::insert_installation(&state.db, &installation)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Attempt Steam linking (if applicable)
+    try_link_steam_installation(&state, &installation).await;
+
+    Ok(())
+}
+
+// ============================================================
+//  ACHIEVEMENT COMMAND (unchanged)
+// ============================================================
 
 #[derive(serde::Serialize, sqlx::FromRow)]
 pub struct AchievementView {
