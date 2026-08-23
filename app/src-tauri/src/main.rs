@@ -10,7 +10,6 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use std::time::Duration;
 
-use crate::detection::GameDetector;
 
 pub struct AppState {
     pub db: SqlitePool,
@@ -37,7 +36,6 @@ async fn main() {
         println!("Recovered {} orphaned session(s) from a previous run", orphaned.len());
     }
 
-    // ================= TEMPORARY STEAM API TEST =================
     dotenvy::dotenv().ok();
     let steam_api_key = std::env::var("STEAM_API_KEY").expect("STEAM_API_KEY not set in .env");
     let steam_id = std::env::var("STEAM_ID").expect("STEAM_ID not set in .env");
@@ -63,12 +61,11 @@ async fn main() {
         }
         (Err(e), _) | (_, Err(e)) => println!("Steam fetch failed: {}", e),
     }
-    // ================= END TEMPORARY TEST =================
 
     let active_sessions: Arc<Mutex<HashMap<String, core::Session>>> =
         Arc::new(Mutex::new(HashMap::new()));
-    let polling_pool = pool.clone();
-    let polling_sessions = active_sessions.clone();
+    let _polling_pool = pool.clone();
+    let _polling_sessions = active_sessions.clone();
     tokio::spawn(async move {
 
     });

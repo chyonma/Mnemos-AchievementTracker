@@ -3,6 +3,7 @@ use crate::AppState;
 use tauri::State;
 use crate::detection::GameDetector;
 use sqlx;
+use crate::providers::{AchievementDefinitionSource, AchievementUnlockSource};
 
 
 async fn try_link_steam_installation(state: &State<'_, AppState>, installation: &crate::core::Installation) {
