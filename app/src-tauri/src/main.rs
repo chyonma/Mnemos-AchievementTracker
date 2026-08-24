@@ -82,6 +82,6 @@ async fn main() {
             bridge::get_achievements_for_installation,
             bridge::add_installation_manually
         ])
-        .run(tauri::generate_context!())
+        .run(tauri::generate_context!())//test
         .expect("error while running tauri application");
 }
