@@ -15,6 +15,7 @@ pub struct AppState {
     pub db: SqlitePool,
 }
 
+
 #[tokio::main]
 async fn main() {
     let pool = storage::connect("sqlite://mnemos.db?mode=rwc")
