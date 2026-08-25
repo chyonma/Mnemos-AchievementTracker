@@ -19,7 +19,7 @@ export function Settings() {
       setSteamId("");
       setStatus("Saved.");
     } catch (err) {
-      setStatus(String(err));///de
+      setStatus(String(err));
     }
   };
 
