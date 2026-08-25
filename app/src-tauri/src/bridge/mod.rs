@@ -248,3 +248,20 @@ pub async fn get_achievements_for_installation(
     .await
     .map_err(|e| e.to_string())
 }
+#[tauri::command]
+pub fn save_steam_credentials(api_key: String, steam_id: String) -> Result<(), String> {
+    if api_key.trim().is_empty() || steam_id.trim().is_empty() {
+        return Err("API key and SteamID cannot be empty".to_string());
+    }
+    if !steam_id.chars().all(|c| c.is_ascii_digit()) {
+        return Err("SteamID64 should be numeric".to_string());
+    }
+    crate::credentials::save_credential("steam_api_key", &api_key)?;
+    crate::credentials::save_credential("steam_id", &steam_id)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_steam_credentials_status() -> bool {
+    crate::credentials::has_credential("steam_api_key") && crate::credentials::has_credential("steam_id")
+}
