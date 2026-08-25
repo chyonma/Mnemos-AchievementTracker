@@ -1,3 +1,3 @@
-export function Achievements() {
-    return <div style={{ padding: 24 }}><h1>Achievements</h1><p>Global achievements overview coming next.</p></div>;
-  }
+export function Settings() {
+  return <div style={{ padding: 24 }}><h1>Settings</h1><p>Settings coming next.</p></div>;
+}
