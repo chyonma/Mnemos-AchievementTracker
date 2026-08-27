@@ -56,9 +56,9 @@ async fn main() {
             bridge::get_watched_folders,
             bridge::get_achievements_for_installation,
             bridge::add_installation_manually,
-            bridge::sync_achievements_for_installation, 
-            bridge::save_steam_credentials,             
-            bridge::get_steam_credentials_status       
+            bridge::sync_achievements_for_installation,
+            bridge::save_steam_credentials,
+            bridge::get_steam_credentials_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

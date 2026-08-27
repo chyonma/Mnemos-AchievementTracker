@@ -47,6 +47,12 @@ pub async fn get_installations(state: State<'_, AppState>) -> Result<Vec<Install
 
 #[tauri::command]
 pub async fn add_watched_folder(state: State<'_, AppState>, path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    if !p.exists() || !p.is_dir() {
+        return Err("Selected folder does not exist".to_string());
+    }
+    let canonical = std::fs::canonicalize(p).map_err(|e| e.to_string())?;
+    let path = canonical.to_str().ok_or("Invalid path encoding")?.to_string();
     crate::storage::insert_watched_folder(&state.db, &path)
         .await
         .map_err(|e| e.to_string())
@@ -103,12 +109,21 @@ pub async fn scan_library(state: State<'_, AppState>) -> Result<usize, String> {
 }
 
 
-
 #[tauri::command]
 pub async fn add_installation_manually(
     state: State<'_, AppState>,
     executable_path: String,
 ) -> Result<(), String> {
+    let path = std::path::Path::new(&executable_path);
+    if !path.exists() || !path.is_file() {
+        return Err("Selected path does not exist".to_string());
+    }
+    if path.extension().and_then(|e| e.to_str()).map(|e| e.to_lowercase()) != Some("exe".to_string()) {
+        return Err("Selected file must be a .exe".to_string());
+    }
+    let canonical = std::fs::canonicalize(path).map_err(|e| e.to_string())?;
+    let executable_path = canonical.to_str().ok_or("Invalid path encoding")?.to_string();
+
     let path = std::path::Path::new(&executable_path);
     let executable_name = path.file_name()
         .and_then(|n| n.to_str())
@@ -177,7 +192,7 @@ pub async fn sync_achievements_for_installation(
     installation_id: String,
 ) -> Result<usize, String> {
     let row: Option<(String, String, String)> = sqlx::query_as(
-        "SELECT pgr.id, pgr.provider, pgr.provider_game_id 
+        "SELECT pgr.id, pgr.provider, pgr.source_id 
          FROM provider_game_records pgr
          JOIN installations i ON i.provider_game_record_id = pgr.id
          WHERE i.id = ?"
@@ -193,17 +208,16 @@ pub async fn sync_achievements_for_installation(
         return Err("Only Steam is supported currently".to_string());
     }
 
- 
-    dotenvy::dotenv().ok();
-    let steam_api_key = std::env::var("STEAM_API_KEY").map_err(|_| "STEAM_API_KEY not set in .env")?;
-    let steam_id = std::env::var("STEAM_ID").map_err(|_| "STEAM_ID not set in .env")?;
+    let steam_api_key = crate::credentials::get_credential("steam_api_key")
+        .ok_or("Steam API key not configured. Add it in Settings.")?;
+    let steam_id = crate::credentials::get_credential("steam_id")
+        .ok_or("Steam ID not configured. Add it in Settings.")?;
     let steam = crate::providers::steam::SteamProvider::new(steam_api_key, steam_id);
 
     let definitions = steam.fetch_definitions(&provider_game_id).await.map_err(|e| e.to_string())?;
     let unlocks = steam.fetch_unlocks(&provider_game_id).await.map_err(|e| e.to_string())?;
     let merged = crate::core::merge_achievements(definitions, &unlocks);
 
-    
     crate::storage::save_provider_achievements(&state.db, &record_id, &merged)
         .await
         .map_err(|e| e.to_string())?;
@@ -248,6 +262,7 @@ pub async fn get_achievements_for_installation(
     .await
     .map_err(|e| e.to_string())
 }
+
 #[tauri::command]
 pub fn save_steam_credentials(api_key: String, steam_id: String) -> Result<(), String> {
     if api_key.trim().is_empty() || steam_id.trim().is_empty() {
