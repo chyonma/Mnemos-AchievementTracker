@@ -2,8 +2,7 @@
 
 > Universal Gaming Companion Platform
 
-Mnemos is an open-source desktop application designed to help players track and preserve their gaming journey across PC games, regardless of launcher whenever technically feasible.
-
+Mnemos is an open-source desktop application designed to help players track and preserve their gaming journey across PC games, regardless of launcher
 ## Vision
 
 Create a modern, extensible, plugin-based gaming companion that provides a unified experience for achievements, playtime, progression, and more.
