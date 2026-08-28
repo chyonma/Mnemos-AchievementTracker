@@ -1,6 +1,6 @@
 # Mnemos
 
-> Universal Gaming Companion Platform
+> Unified Gaming Companion Platform
 
 Mnemos is an open-source desktop application designed to help players track and preserve their gaming journey across PC games, regardless of launcher
 ## Vision
